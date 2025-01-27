@@ -2,6 +2,7 @@ package com.thewinterframework.command;
 
 import com.google.inject.*;
 import com.thewinterframework.command.config.CommandConfigurationRegistrar;
+import com.thewinterframework.command.config.CommandManagerConfiguration;
 import com.thewinterframework.command.processor.CommandComponentProcessor;
 import com.thewinterframework.plugin.WinterPlugin;
 import com.thewinterframework.plugin.module.PluginModule;
@@ -61,26 +62,33 @@ public class CommandModule implements PluginModule {
 	@Override
 	public boolean onEnable(WinterPlugin plugin) {
 		final var injector = plugin.getInjector();
-		final var commandManager = injector.getInstance(PaperCommandManager.class);
+		final var commandManager = injector.getInstance(Key.get(new TypeLiteral<PaperCommandManager<Source>>() {}));
 		final var configurationRegistrar = injector.getInstance(CommandConfigurationRegistrar.class);
-		configurationRegistrar.configure(commandManager);
-
 		for (final var commandComponent : commandComponents) {
 			if (ArgumentParser.class.isAssignableFrom(commandComponent)) {
 				registerArgumentParser(commandManager, injector, commandComponent);
 			}
-
 			if (ParameterInjector.class.isAssignableFrom(commandComponent)) {
 				registerParameterInjector(commandManager, injector, commandComponent);
 			}
+			if (CommandManagerConfiguration.class.isAssignableFrom(commandComponent)) {
+				registerCommandManagerConfiguration(configurationRegistrar, injector, commandComponent);
+			}
 		}
-
+		configurationRegistrar.configure(commandManager);
 		final var annotationParser = injector.getInstance(Key.get(new TypeLiteral<AnnotationParser<Source>>() {}));
 		for (final var commandComponent : commandComponents) {
 			annotationParser.parse(injector.getInstance(commandComponent));
 		}
-
 		return true;
+	}
+
+	private void registerCommandManagerConfiguration(
+			CommandConfigurationRegistrar configurationRegistrar,
+			Injector injector,
+			Class<?> clazz
+	) {
+		configurationRegistrar.register((CommandManagerConfiguration) injector.getInstance(clazz));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -104,7 +112,6 @@ public class CommandModule implements PluginModule {
 	) {
 		final var type = (TypeToken<Object>) TypeToken.get(Reflections.getGenericType(clazz, ParameterInjector.class, 1));
 		final var parameterInjector = (ParameterInjector<Source, Object>) injector.getInstance(clazz);
-
 		commandManager.parameterInjectorRegistry()
 				.registerInjector(type, parameterInjector);
 	}
