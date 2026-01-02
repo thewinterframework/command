@@ -3,12 +3,15 @@ package com.thewinterframework.command;
 import com.google.inject.*;
 import com.thewinterframework.command.config.CommandConfigurationRegistrar;
 import com.thewinterframework.command.config.CommandManagerConfiguration;
+import com.thewinterframework.command.decorator.AnnotationParserDecorator;
 import com.thewinterframework.command.processor.CommandComponentProcessor;
 import com.thewinterframework.plugin.WinterPlugin;
 import com.thewinterframework.plugin.module.PluginModule;
 import com.thewinterframework.utils.Reflections;
 import io.leangen.geantyref.TypeToken;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.incendo.cloud.SenderMapper;
 import org.incendo.cloud.annotations.AnnotationParser;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.injection.ParameterInjector;
@@ -46,9 +49,14 @@ public class CommandModule implements PluginModule {
 
 	@Provides
 	@Singleton
-	PaperCommandManager<Source> commandManager(JavaPlugin plugin) {
+	PaperCommandManager<Source> commandManager(JavaPlugin plugin, Injector injector) {
+		final var senderMapper = this.commandComponents.stream()
+				.filter(SenderMapper.class::isAssignableFrom)
+				.findFirst()
+				.map(clazz -> (SenderMapper<CommandSourceStack, Source>) injector.getInstance(clazz))
+				.orElse(PaperSimpleSenderMapper.simpleSenderMapper());
 		return PaperCommandManager
-				.builder(PaperSimpleSenderMapper.simpleSenderMapper())
+				.builder(senderMapper)
 				.executionCoordinator(ExecutionCoordinator.simpleCoordinator())
 				.buildOnEnable(plugin);
 	}
@@ -64,6 +72,7 @@ public class CommandModule implements PluginModule {
 		final var injector = plugin.getInjector();
 		final var commandManager = injector.getInstance(Key.get(new TypeLiteral<PaperCommandManager<Source>>() {}));
 		final var configurationRegistrar = injector.getInstance(CommandConfigurationRegistrar.class);
+		final var annotationParser = injector.getInstance(Key.get(new TypeLiteral<AnnotationParser<Source>>() {}));
 		for (final var commandComponent : commandComponents) {
 			if (ArgumentParser.class.isAssignableFrom(commandComponent)) {
 				registerArgumentParser(commandManager, injector, commandComponent);
@@ -74,9 +83,11 @@ public class CommandModule implements PluginModule {
 			if (CommandManagerConfiguration.class.isAssignableFrom(commandComponent)) {
 				registerCommandManagerConfiguration(configurationRegistrar, injector, commandComponent);
 			}
+			if (AnnotationParserDecorator.class.isAssignableFrom(commandComponent)) {
+				decorateAnnotationParser(annotationParser, injector, commandComponent);
+			}
 		}
 		configurationRegistrar.configure(commandManager);
-		final var annotationParser = injector.getInstance(Key.get(new TypeLiteral<AnnotationParser<Source>>() {}));
 		for (final var commandComponent : commandComponents) {
 			annotationParser.parse(injector.getInstance(commandComponent));
 		}
@@ -114,6 +125,15 @@ public class CommandModule implements PluginModule {
 		final var parameterInjector = (ParameterInjector<Source, Object>) injector.getInstance(clazz);
 		commandManager.parameterInjectorRegistry()
 				.registerInjector(type, parameterInjector);
+	}
+
+	private void decorateAnnotationParser(
+			AnnotationParser<Source> annotationParser,
+			Injector injector,
+			Class<?> clazz
+	) {
+		final var decorator = (AnnotationParserDecorator) injector.getInstance(clazz);
+		decorator.decorate(annotationParser);
 	}
 
 }
