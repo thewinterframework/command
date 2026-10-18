@@ -1,31 +1,31 @@
 # Winter Command
 
-Integración de [Incendo Cloud](https://cloud.incendo.org/) con los componentes y la inyección de dependencias de Winter para **Paper** y **Velocity**. Requiere **Java 21**.
+Integrates [Incendo Cloud](https://cloud.incendo.org/) with Winter components and dependency injection for **Paper** and **Velocity**. Requires **Java 21**.
 
-## Módulos
+## Modules
 
-| Artefacto | Contenido | Remitente de comandos |
+| Artifact | Contents | Command sender |
 | --- | --- | --- |
-| `com.thewinterframework:command-core:3.0.0` | `@CommandComponent`, extensiones genéricas y registro compartido | Genérico (`C`) |
-| `com.thewinterframework:command-paper:3.0.0` | Gestor, parser de anotaciones y procesador de Winter para Paper | `org.incendo.cloud.paper.util.sender.Source` |
-| `com.thewinterframework:command-velocity:3.0.0` | Gestor, parser de anotaciones y procesador de Winter para Velocity | `com.velocitypowered.api.command.CommandSource` |
+| `com.thewinterframework:command-core:3.0.0` | `@CommandComponent`, generic extensions, and shared registration | Generic (`C`) |
+| `com.thewinterframework:command-paper:3.0.0` | Command manager, annotation parser, and Winter processor for Paper | `org.incendo.cloud.paper.util.sender.Source` |
+| `com.thewinterframework:command-velocity:3.0.0` | Command manager, annotation parser, and Winter processor for Velocity | `com.velocitypowered.api.command.CommandSource` |
 
-Cada adaptador incluye `command-core` transitivamente. Usa un solo adaptador por plugin y por ruta de procesamiento de anotaciones. El núcleo y el adaptador de Velocity no dependen de Bukkit ni de Paper.
+Each adapter includes `command-core` transitively. Use one adapter per plugin and annotation processor path. The core module and Velocity adapter have no dependencies on Bukkit or Paper.
 
-## Versiones
+## Versions
 
-| Dependencia | Versión |
+| Dependency | Version |
 | --- | --- |
 | Winter Core / Paper / Velocity | `2.2.0` |
 | Cloud Core / Annotations | `2.1.0` |
 | Cloud Paper / Velocity | `2.0.1` |
-| Velocity API de compilación | `3.4.0-SNAPSHOT` |
+| Velocity API used for compilation | `3.4.0-SNAPSHOT` |
 
-Cloud mantiene versiones independientes para el [núcleo y las anotaciones](https://github.com/Incendo/cloud/releases) y las [integraciones de Minecraft](https://github.com/Incendo/cloud-minecraft/releases). Las versiones están centralizadas en `gradle.properties`.
+Cloud versions its [core and annotations](https://github.com/Incendo/cloud/releases) independently from its [Minecraft integrations](https://github.com/Incendo/cloud-minecraft/releases). Dependency versions are centralized in `gradle.properties`.
 
-## Instalación
+## Installation
 
-Los siguientes ejemplos usan Gradle Kotlin DSL y las coordenadas de Maven Central para Winter `2.2.0` y Winter Command `3.0.0`.
+The following examples use Gradle Kotlin DSL and Maven Central coordinates for Winter `2.2.0` and Winter Command `3.0.0`.
 
 ```kotlin
 repositories {
@@ -54,7 +54,7 @@ dependencies {
 }
 ```
 
-El plugin debe extender `PaperWinterPlugin` y llevar `@WinterBootPlugin`. `PaperCommandModule` crea el gestor durante la habilitación del plugin mediante `PaperCommandManager.buildOnEnable`. El gestor moderno de Cloud requiere Paper **1.20.6 o posterior**; utiliza una versión compatible con tu distribución de Winter.
+The plugin must extend `PaperWinterPlugin` and declare `@WinterBootPlugin`. `PaperCommandModule` creates the command manager during plugin enable using `PaperCommandManager.buildOnEnable`. Cloud's modern command manager requires Paper **1.20.6 or later**; choose a version compatible with your Winter distribution.
 
 ```java
 import com.thewinterframework.command.CommandComponent;
@@ -70,7 +70,7 @@ public final class HelloCommand {
 }
 ```
 
-Se pueden inyectar `PaperCommandManager<Source>`, `CommandManager<Source>` y `AnnotationParser<Source>`; ambos tipos de gestor resuelven la misma instancia.
+You can inject `PaperCommandManager<Source>`, `CommandManager<Source>`, and `AnnotationParser<Source>`. Both command manager types resolve to the same instance.
 
 ### Velocity
 
@@ -84,7 +84,7 @@ dependencies {
 }
 ```
 
-El plugin debe extender `VelocityWinterPlugin` y llevar `@WinterBootPlugin` junto con `@Plugin` de Velocity. Su constructor inyectado recibe el `Injector` de Velocity y lo pasa a `super(injector)`. Winter hereda las vinculaciones de `ProxyServer` y del `PluginContainer` del propio plugin. El adaptador crea `VelocityCommandManager` durante la habilitación de módulos y utiliza `CommandSource` directamente.
+The plugin must extend `VelocityWinterPlugin` and declare both `@WinterBootPlugin` and Velocity's `@Plugin`. Its injected constructor receives Velocity's `Injector` and passes it to `super(injector)`. Winter inherits the bindings for `ProxyServer` and the plugin's own `PluginContainer`. The adapter creates `VelocityCommandManager` during module enable and uses `CommandSource` directly.
 
 ```java
 import com.thewinterframework.command.CommandComponent;
@@ -101,49 +101,49 @@ public final class HelloCommand {
 }
 ```
 
-Se pueden inyectar `VelocityCommandManager<CommandSource>`, `CommandManager<CommandSource>` y `AnnotationParser<CommandSource>`; ambos tipos de gestor resuelven la misma instancia.
+You can inject `VelocityCommandManager<CommandSource>`, `CommandManager<CommandSource>`, and `AnnotationParser<CommandSource>`. Both command manager types resolve to the same instance.
 
-## Extensiones de comandos
+## Command extensions
 
-Winter descubre las clases anotadas con `@CommandComponent` y resuelve sus dependencias mediante el inyector del plugin. Además de comandos con anotaciones de Cloud, admite:
+Winter discovers classes annotated with `@CommandComponent` and resolves their dependencies through the plugin injector. In addition to commands declared with Cloud annotations, it supports:
 
-- `ArgumentParser<C, T>`: registra un parser para `T`, incluyendo implementaciones heredadas.
-- `ParameterInjector<C, T>`: registra la inyección de parámetros para `T`.
-- `CommandManagerConfiguration<C>`: configura el gestor antes de analizar los comandos.
-- `AnnotationParserDecorator<C>`: personaliza el parser de anotaciones antes de registrar los comandos.
-- `SenderMapper<N, C>`: reemplaza el mapper predeterminado; `N` es `CommandSourceStack` en Paper y `CommandSource` en Velocity. `C` conserva el tipo de remitente del adaptador.
+- `ArgumentParser<C, T>`: registers a parser for `T`, including inherited implementations.
+- `ParameterInjector<C, T>`: registers parameter injection for `T`.
+- `CommandManagerConfiguration<C>`: configures the command manager before annotated commands are parsed.
+- `AnnotationParserDecorator<C>`: customizes the annotation parser before commands are registered.
+- `SenderMapper<N, C>`: replaces the default sender mapper. `N` is `CommandSourceStack` on Paper and `CommandSource` on Velocity. `C` remains the adapter's command sender type.
 
-Por ejemplo, una configuración de Velocity implementa:
+For example, a Velocity configuration implements:
 
 ```java
 @CommandComponent
 public final class Commands implements CommandManagerConfiguration<CommandSource> {
     @Override
     public void configure(final CommandManager<CommandSource> manager) {
-        // Registrar opciones, parsers o procesadores de Cloud.
+        // Register Cloud options, parsers, or processors.
     }
 }
 ```
 
-Los parsers, inyectores y decoradores se registran primero; después se aplican las configuraciones y finalmente se analizan los comandos. Usa inyección por constructor para las dependencias de cada componente. Los gestores mantienen `ExecutionCoordinator.simpleCoordinator()`; respeta las restricciones de ejecución de la plataforma dentro de los handlers.
+Parsers, parameter injectors, and decorators are registered first. Configurations are then applied, followed by annotation parsing for commands. Use constructor injection for component dependencies. Command managers use `ExecutionCoordinator.simpleCoordinator()`; handlers must respect the platform's threading requirements.
 
-## Migración desde 2.0.0
+## Migration from 2.0.0
 
-Esta es una versión mayor porque cambian los artefactos y los contratos de las extensiones:
+This is a major release because artifact coordinates and extension contracts have changed:
 
-1. Sustituye `com.thewinterframework:command:2.0.0` por `command-paper:3.0.0` o `command-velocity:3.0.0`, tanto en las dependencias como en `annotationProcessor`.
-2. Conserva el import `com.thewinterframework.command.CommandComponent`.
-3. Añade el tipo de remitente a `CommandManagerConfiguration<C>`, `CommandConfigurationRegistrar<C>` y `AnnotationParserDecorator<C>`.
-4. Cambia el parámetro de `CommandManagerConfiguration.configure` de `PaperCommandManager<Source>` a `CommandManager<Source>` en Paper, o a `CommandManager<CommandSource>` en Velocity. Inyecta el gestor concreto si necesitas funciones específicas de la plataforma.
-5. Si registrabas el módulo manualmente, sustituye `CommandModule` por `com.thewinterframework.command.paper.PaperCommandModule` o `com.thewinterframework.command.velocity.VelocityCommandModule`. El procesador del adaptador genera ese registro automáticamente.
+1. Replace `com.thewinterframework:command:2.0.0` with `command-paper:3.0.0` or `command-velocity:3.0.0` in both your dependencies and `annotationProcessor` configuration.
+2. Keep the `com.thewinterframework.command.CommandComponent` import.
+3. Add the command sender type to `CommandManagerConfiguration<C>`, `CommandConfigurationRegistrar<C>`, and `AnnotationParserDecorator<C>`.
+4. Change the parameter of `CommandManagerConfiguration.configure` from `PaperCommandManager<Source>` to `CommandManager<Source>` on Paper, or to `CommandManager<CommandSource>` on Velocity. Inject the concrete command manager when you need platform-specific features.
+5. If you registered the module manually, replace `CommandModule` with `com.thewinterframework.command.paper.PaperCommandModule` or `com.thewinterframework.command.velocity.VelocityCommandModule`. The adapter's annotation processor generates this registration automatically.
 
-## Compilación y publicación local
+## Building and publishing locally
 
 ```powershell
 .\gradlew.bat clean build
 .\gradlew.bat publishToMavenLocal
 ```
 
-En Linux/macOS usa `./gradlew`. El build genera los JAR, fuentes y Javadoc en `core/build/libs`, `paper/build/libs` y `velocity/build/libs`. La publicación utiliza los nombres `command-core`, `command-paper` y `command-velocity`.
+On Linux and macOS, use `./gradlew`. The build generates binary, source, and Javadoc JARs in `core/build/libs`, `paper/build/libs`, and `velocity/build/libs`. Published artifacts are named `command-core`, `command-paper`, and `command-velocity`.
 
-Las pruebas comprueban la ejecución de comandos y sus extensiones, la generación de módulos para cada plataforma, la ruta independiente de procesamiento de anotaciones y la inyección del gestor real de Velocity. La ejecución dentro de un servidor Paper o proxy Velocity debe verificarse en el entorno de integración del plugin consumidor.
+Tests cover command execution and extensions, module generation for each platform, the separate annotation processor path, and injection of the real Velocity command manager. Verify execution on a running Paper server or Velocity proxy in the consuming plugin's integration environment.
