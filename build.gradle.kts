@@ -1,84 +1,87 @@
 plugins {
-    id("java")
-    id("maven-publish")
+    base
     id("io.deepmedia.tools.deployer") version "0.16.0"
-    `java-library`
 }
 
-repositories {
-    mavenCentral()
-    maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://oss.sonatype.org/content/repositories/snapshots/")
-    maven("https://repo.kryptonmc.org/releases")
-    maven("https://repo.spongepowered.org/maven/")
-}
+subprojects {
+    apply(plugin = "java-library")
+    apply(plugin = "maven-publish")
+    apply(plugin = "io.deepmedia.tools.deployer")
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
+    group = rootProject.group
+    version = rootProject.version
 
-deployer {
-    signing {
-        key.set(secret("winterSigningKey"))
-        password.set(secret("winterSigningPassphrase"))
+    repositories {
+        mavenCentral()
+        maven("https://repo.papermc.io/repository/maven-public/")
     }
 
-    content {
-        component {
-            fromJava()
+    extensions.configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+        options.compilerArgs.add("-parameters")
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
+        systemProperty("command.test.classpath", project.extensions.getByType<SourceSetContainer>()["test"].runtimeClasspath.asPath)
+        systemProperty("command.test.processorpath", project.extensions.getByType<SourceSetContainer>()["main"].runtimeClasspath.asPath)
+    }
+
+    dependencies {
+        "testImplementation"("org.junit.jupiter:junit-jupiter:5.11.4")
+        "testImplementation"("org.mockito:mockito-core:5.15.2")
+        "testImplementation"("net.kyori:adventure-api:4.18.0")
+        "testImplementation"("org.slf4j:slf4j-api:2.0.16")
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+    }
+
+    deployer {
+        signing {
+            key.set(secret("winterSigningKey"))
+            password.set(secret("winterSigningPassphrase"))
+        }
+        content {
+            component { fromJava() }
+        }
+        projectInfo {
+            description.set("Winter command integration for Cloud on Paper and Velocity.")
+            url.set("https://github.com/thewinterframework/command")
+            license(MIT)
+            groupId.set(project.group.toString())
+            artifactId.set(project.name)
+            scm.fromGithub("thewinterframework", "command")
+            developer("Diego Cardenas", "diego.cardenas.v06@gmail.com")
+        }
+        centralPortalSpec {
+            signing.key.set(secret("winterSigningKey"))
+            signing.password.set(secret("winterSigningPassphrase"))
+            auth.user.set(secret("winterRepositoryUsername"))
+            auth.password.set(secret("winterRepositoryPassword"))
         }
     }
 
-    projectInfo {
-        description.set("The framework to make plugin creation easier than ever.")
-        url.set("https://github.com/thewinterframework/command")
-        license(MIT)
-
-        groupId.set(group.toString())
-        scm.fromGithub("thewinterframework", "command")
-        developer("Diego Cardenas", "diego.cardenas.v06@gmail.com")
-        artifactId.set(project.name)
-    }
-
-    centralPortalSpec {
-        signing.key.set(secret("winterSigningKey"))
-        signing.password.set(secret("winterSigningPassphrase"))
-        auth.user.set(secret("winterRepositoryUsername"))
-        auth.password.set(secret("winterRepositoryPassword"))
-    }
-}
-
-dependencies {
-    // Core
-    compileOnlyApi("com.thewinterframework:core:2.0.0")
-    annotationProcessor("com.thewinterframework:core:2.0.0")
-
-    // Paper platform
-    compileOnlyApi("com.thewinterframework:paper:2.0.0")
-
-    // External Command Framework
-    api("org.incendo:cloud-paper:2.0.0-beta.10")
-    api("org.incendo:cloud-annotations:2.0.0")
-
-    annotationProcessor("com.google.auto.service:auto-service:1.1.1")
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-    options.compilerArgs.add("-parameters")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
+    extensions.configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("maven") { from(components["java"]) }
         }
     }
 }
+
+configure(subprojects.filter { it.name != "command-core" }) {
+    extensions.configure<SourceSetContainer> {
+        named("test") { java.srcDir(rootProject.file("test-support/src/main/java")) }
+    }
+    tasks.withType<Test>().configureEach {
+        systemProperty("command.test.platform", project.name.removePrefix("command-"))
+    }
+}
+
+tasks.named("build") { dependsOn(subprojects.map { "${it.path}:build" }) }
+tasks.named("check") { dependsOn(subprojects.map { "${it.path}:check" }) }
+tasks.named("clean") { dependsOn(subprojects.map { "${it.path}:clean" }) }
