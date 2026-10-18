@@ -11,3 +11,7 @@ dependencies {
     testImplementation("com.thewinterframework:paper:${property("winterVersion")}")
     testImplementation("io.papermc.paper:paper-api:${property("paperVersion")}")
 }
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}

@@ -1,14 +1,14 @@
 # Winter Command
 
-Integrates [Incendo Cloud](https://cloud.incendo.org/) with Winter components and dependency injection for **Paper** and **Velocity**. Requires **Java 21**.
+Integrates [Incendo Cloud](https://cloud.incendo.org/) with Winter components and dependency injection for **Paper** and **Velocity**. Core and Velocity require **Java 21**; Paper requires **Java 25**.
 
 ## Modules
 
 | Artifact | Contents | Command sender |
 | --- | --- | --- |
-| `com.thewinterframework:command-core:3.0.0` | `@CommandComponent`, generic extensions, and shared registration | Generic (`C`) |
-| `com.thewinterframework:command-paper:3.0.0` | Command manager, annotation parser, and Winter processor for Paper | `org.incendo.cloud.paper.util.sender.Source` |
-| `com.thewinterframework:command-velocity:3.0.0` | Command manager, annotation parser, and Winter processor for Velocity | `com.velocitypowered.api.command.CommandSource` |
+| `com.thewinterframework:command-core:3.1.0` | `@CommandComponent`, generic extensions, and shared registration | Generic (`C`) |
+| `com.thewinterframework:command-paper:3.1.0` | Command manager, annotation parser, and Winter processor for Paper | `org.incendo.cloud.paper.util.sender.Source` |
+| `com.thewinterframework:command-velocity:3.1.0` | Command manager, annotation parser, and Winter processor for Velocity | `com.velocitypowered.api.command.CommandSource` |
 
 Each adapter includes `command-core` transitively. Use one adapter per plugin and annotation processor path. The core module and Velocity adapter have no dependencies on Bukkit or Paper.
 
@@ -16,16 +16,18 @@ Each adapter includes `command-core` transitively. Use one adapter per plugin an
 
 | Dependency | Version |
 | --- | --- |
-| Winter Core / Paper / Velocity | `2.2.0` |
+| Winter Core / Paper / Velocity | `2.3.0` |
 | Cloud Core / Annotations | `2.1.0` |
 | Cloud Paper / Velocity | `2.0.1` |
 | Velocity API used for compilation | `3.4.0-SNAPSHOT` |
+| Paper API used for compilation | `26.2.build.134-stable` |
+| Adventure | `5.2.0` |
 
 Cloud versions its [core and annotations](https://github.com/Incendo/cloud/releases) independently from its [Minecraft integrations](https://github.com/Incendo/cloud-minecraft/releases). Dependency versions are centralized in `gradle.properties`.
 
 ## Installation
 
-The following examples use Gradle Kotlin DSL and Maven Central coordinates for Winter `2.2.0` and Winter Command `3.0.0`.
+The following examples use Gradle Kotlin DSL and Maven Central coordinates for Winter `2.3.0` and Winter Command `3.1.0`.
 
 ```kotlin
 repositories {
@@ -45,16 +47,20 @@ tasks.withType<JavaCompile>().configureEach {
 ### Paper
 
 ```kotlin
-dependencies {
-    implementation("com.thewinterframework:paper:2.2.0")
-    annotationProcessor("com.thewinterframework:paper:2.2.0")
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}
 
-    implementation("com.thewinterframework:command-paper:3.0.0")
-    annotationProcessor("com.thewinterframework:command-paper:3.0.0")
+dependencies {
+    implementation("com.thewinterframework:paper:2.3.0")
+    annotationProcessor("com.thewinterframework:paper:2.3.0")
+
+    implementation("com.thewinterframework:command-paper:3.1.0")
+    annotationProcessor("com.thewinterframework:command-paper:3.1.0")
 }
 ```
 
-The plugin must extend `PaperWinterPlugin` and declare `@WinterBootPlugin`. `PaperCommandModule` creates the command manager during plugin enable using `PaperCommandManager.buildOnEnable`. Cloud's modern command manager requires Paper **1.20.6 or later**; choose a version compatible with your Winter distribution.
+The plugin must extend `PaperWinterPlugin` and declare `@WinterBootPlugin`. `PaperCommandModule` creates the command manager during plugin enable using `PaperCommandManager.buildOnEnable`. This adapter targets Paper **26.2** with Winter **2.3.0** and Java **25**.
 
 ```java
 import com.thewinterframework.command.CommandComponent;
@@ -76,11 +82,11 @@ You can inject `PaperCommandManager<Source>`, `CommandManager<Source>`, and `Ann
 
 ```kotlin
 dependencies {
-    implementation("com.thewinterframework:velocity:2.2.0")
-    annotationProcessor("com.thewinterframework:velocity:2.2.0")
+    implementation("com.thewinterframework:velocity:2.3.0")
+    annotationProcessor("com.thewinterframework:velocity:2.3.0")
 
-    implementation("com.thewinterframework:command-velocity:3.0.0")
-    annotationProcessor("com.thewinterframework:command-velocity:3.0.0")
+    implementation("com.thewinterframework:command-velocity:3.1.0")
+    annotationProcessor("com.thewinterframework:command-velocity:3.1.0")
 }
 ```
 
@@ -129,9 +135,9 @@ Parsers, parameter injectors, and decorators are registered first. Configuration
 
 ## Migration from 2.0.0
 
-This is a major release because artifact coordinates and extension contracts have changed:
+The 3.x line changes artifact coordinates and extension contracts:
 
-1. Replace `com.thewinterframework:command:2.0.0` with `command-paper:3.0.0` or `command-velocity:3.0.0` in both your dependencies and `annotationProcessor` configuration.
+1. Replace `com.thewinterframework:command:2.0.0` with `command-paper:3.1.0` or `command-velocity:3.1.0` in both your dependencies and `annotationProcessor` configuration.
 2. Keep the `com.thewinterframework.command.CommandComponent` import.
 3. Add the command sender type to `CommandManagerConfiguration<C>`, `CommandConfigurationRegistrar<C>`, and `AnnotationParserDecorator<C>`.
 4. Change the parameter of `CommandManagerConfiguration.configure` from `PaperCommandManager<Source>` to `CommandManager<Source>` on Paper, or to `CommandManager<CommandSource>` on Velocity. Inject the concrete command manager when you need platform-specific features.
@@ -143,6 +149,10 @@ This is a major release because artifact coordinates and extension contracts hav
 .\gradlew.bat clean build
 .\gradlew.bat publishToMavenLocal
 ```
+
+Build with the included Gradle 9.1.0 wrapper and JDK 21 and JDK 25 available for the module toolchains.
+
+For an unpublished Winter version in a sibling checkout, validate with `.\gradlew.bat build --include-build ..\winter`.
 
 On Linux and macOS, use `./gradlew`. The build generates binary, source, and Javadoc JARs in `core/build/libs`, `paper/build/libs`, and `velocity/build/libs`. Published artifacts are named `command-core`, `command-paper`, and `command-velocity`.
 

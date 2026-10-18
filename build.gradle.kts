@@ -35,8 +35,8 @@ subprojects {
 
     dependencies {
         "testImplementation"("org.junit.jupiter:junit-jupiter:5.11.4")
-        "testImplementation"("org.mockito:mockito-core:5.15.2")
-        "testImplementation"("net.kyori:adventure-api:4.18.0")
+        "testImplementation"("org.mockito:mockito-core:5.20.0")
+        "testImplementation"("net.kyori:adventure-api:${property("adventureVersion")}")
         "testImplementation"("org.slf4j:slf4j-api:2.0.16")
         "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
