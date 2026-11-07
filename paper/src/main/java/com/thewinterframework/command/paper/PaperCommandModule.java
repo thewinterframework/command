@@ -4,6 +4,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.thewinterframework.command.CommandModule;
+import com.thewinterframework.component.annotation.SyncLoading;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.annotations.AnnotationParser;
@@ -13,6 +14,7 @@ import org.incendo.cloud.paper.util.sender.PaperSimpleSenderMapper;
 import org.incendo.cloud.paper.util.sender.Source;
 
 /** Winter command integration using Cloud's Paper sender wrappers. */
+@SyncLoading
 public final class PaperCommandModule extends CommandModule<Source> {
     @Provides
     @Singleton

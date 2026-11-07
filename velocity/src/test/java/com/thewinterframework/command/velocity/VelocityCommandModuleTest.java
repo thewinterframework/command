@@ -6,25 +6,32 @@ import com.google.inject.TypeLiteral;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.event.EventManager;
 import com.velocitypowered.api.plugin.PluginContainer;
+import com.velocitypowered.api.plugin.PluginManager;
+import com.thewinterframework.velocity.VelocityWinterPlugin;
 import com.velocitypowered.api.proxy.ProxyServer;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.annotations.AnnotationParser;
 import org.incendo.cloud.velocity.VelocityCommandManager;
 import org.junit.jupiter.api.Test;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class VelocityCommandModuleTest {
     @Test
-    void inheritsVelocityBindingsAndSharesTheCommandManager() {
+    void resolvesWinter3PlatformBindingsAndSharesTheCommandManager() {
         final var server = mock(ProxyServer.class);
         final var eventManager = mock(EventManager.class);
         when(server.getEventManager()).thenReturn(eventManager);
         final var plugin = mock(PluginContainer.class);
+        final var winterPlugin = mock(VelocityWinterPlugin.class);
+        final var pluginManager = mock(PluginManager.class);
+        when(server.getPluginManager()).thenReturn(pluginManager);
+        when(pluginManager.fromInstance(winterPlugin)).thenReturn(Optional.of(plugin));
         final var parent = Guice.createInjector(binder -> {
             binder.bind(ProxyServer.class).toInstance(server);
-            binder.bind(PluginContainer.class).toInstance(plugin);
+            binder.bind(VelocityWinterPlugin.class).toInstance(winterPlugin);
         });
         final var module = new VelocityCommandModule();
         final var injector = parent.createChildInjector(module);

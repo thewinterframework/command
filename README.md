@@ -6,9 +6,9 @@ Integrates [Incendo Cloud](https://cloud.incendo.org/) with Winter components an
 
 | Artifact | Contents | Command sender |
 | --- | --- | --- |
-| `com.thewinterframework:command-core:3.1.0` | `@CommandComponent`, generic extensions, and shared registration | Generic (`C`) |
-| `com.thewinterframework:command-paper:3.1.0` | Command manager, annotation parser, and Winter processor for Paper | `org.incendo.cloud.paper.util.sender.Source` |
-| `com.thewinterframework:command-velocity:3.1.0` | Command manager, annotation parser, and Winter processor for Velocity | `com.velocitypowered.api.command.CommandSource` |
+| `com.thewinterframework:command-core:4.0.0` | `@CommandComponent`, generic extensions, and shared registration | Generic (`C`) |
+| `com.thewinterframework:command-paper:4.0.0` | Command manager, annotation parser, and Winter processor for Paper | `org.incendo.cloud.paper.util.sender.Source` |
+| `com.thewinterframework:command-velocity:4.0.0` | Command manager, annotation parser, and Winter processor for Velocity | `com.velocitypowered.api.command.CommandSource` |
 
 Each adapter includes `command-core` transitively. Use one adapter per plugin and annotation processor path. The core module and Velocity adapter have no dependencies on Bukkit or Paper.
 
@@ -16,7 +16,7 @@ Each adapter includes `command-core` transitively. Use one adapter per plugin an
 
 | Dependency | Version |
 | --- | --- |
-| Winter Core / Paper / Velocity | `2.3.0` |
+| Winter Core / Paper / Velocity | `3.0.0` |
 | Cloud Core / Annotations | `2.1.0` |
 | Cloud Paper / Velocity | `2.0.1` |
 | Velocity API used for compilation | `3.4.0-SNAPSHOT` |
@@ -27,7 +27,7 @@ Cloud versions its [core and annotations](https://github.com/Incendo/cloud/relea
 
 ## Installation
 
-The following examples use Gradle Kotlin DSL and Maven Central coordinates for Winter `2.3.0` and Winter Command `3.1.0`.
+The following examples use Gradle Kotlin DSL and Maven Central coordinates for Winter `3.0.0` and Winter Command `4.0.0`.
 
 ```kotlin
 repositories {
@@ -52,15 +52,15 @@ java {
 }
 
 dependencies {
-    implementation("com.thewinterframework:paper:2.3.0")
-    annotationProcessor("com.thewinterframework:paper:2.3.0")
+    implementation("com.thewinterframework:paper:3.0.0")
+    annotationProcessor("com.thewinterframework:paper:3.0.0")
 
-    implementation("com.thewinterframework:command-paper:3.1.0")
-    annotationProcessor("com.thewinterframework:command-paper:3.1.0")
+    implementation("com.thewinterframework:command-paper:4.0.0")
+    annotationProcessor("com.thewinterframework:command-paper:4.0.0")
 }
 ```
 
-The plugin must extend `PaperWinterPlugin` and declare `@WinterBootPlugin`. `PaperCommandModule` creates the command manager during plugin enable using `PaperCommandManager.buildOnEnable`. This adapter targets Paper **26.2** with Winter **2.3.0** and Java **25**.
+The plugin must extend `PaperWinterPlugin` and declare `@WinterBootPlugin`. `PaperCommandModule` creates the command manager during plugin enable using `PaperCommandManager.buildOnEnable`. This adapter targets Paper **26.2** with Winter **3.0.0** and Java **25**.
 
 ```java
 import com.thewinterframework.command.CommandComponent;
@@ -82,15 +82,17 @@ You can inject `PaperCommandManager<Source>`, `CommandManager<Source>`, and `Ann
 
 ```kotlin
 dependencies {
-    implementation("com.thewinterframework:velocity:2.3.0")
-    annotationProcessor("com.thewinterframework:velocity:2.3.0")
+    implementation("com.thewinterframework:velocity:3.0.0")
+    annotationProcessor("com.thewinterframework:velocity:3.0.0")
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
 
-    implementation("com.thewinterframework:command-velocity:3.1.0")
-    annotationProcessor("com.thewinterframework:command-velocity:3.1.0")
+    implementation("com.thewinterframework:command-velocity:4.0.0")
+    annotationProcessor("com.thewinterframework:command-velocity:4.0.0")
 }
 ```
 
-The plugin must extend `VelocityWinterPlugin` and declare both `@WinterBootPlugin` and Velocity's `@Plugin`. Its injected constructor receives Velocity's `Injector` and passes it to `super(injector)`. Winter inherits the bindings for `ProxyServer` and the plugin's own `PluginContainer`. The adapter creates `VelocityCommandManager` during module enable and uses `CommandSource` directly.
+The plugin must extend `VelocityWinterPlugin` and declare both `@WinterBootPlugin` and Velocity's `@Plugin`. Its injected constructor receives `ProxyServer`, `Logger`, and `@DataDirectory Path` and passes them to `super(server, logger, directory)`. The adapter resolves the plugin container from Velocity's plugin manager instead of inheriting a parent injector. The adapter creates `VelocityCommandManager` during Winter injection before module ENABLE and uses `CommandSource` directly.
 
 ```java
 import com.thewinterframework.command.CommandComponent;
@@ -133,11 +135,19 @@ public final class Commands implements CommandManagerConfiguration<CommandSource
 
 Parsers, parameter injectors, and decorators are registered first. Configurations are then applied, followed by annotation parsing for commands. Use constructor injection for component dependencies. Command managers use `ExecutionCoordinator.simpleCoordinator()`; handlers must respect the platform's threading requirements.
 
+## Migration from Command 3.x / Winter 2.x
+
+Command 4.0.0 requires Winter 3.0.0 on both the dependency and annotation processor paths. The platform processors implement `WinterProcessorExtension` and keep generating the adapter module and command wire. Custom processor extensions should use that SPI instead of the deprecated legacy adapter. `@CommandComponent` and the Cloud extension interfaces keep their existing contracts.
+
+The platform modules declare `@SyncLoading` so command registration remains on the platform lifecycle thread while independent Winter modules load in parallel. On Velocity, update the boot constructor to accept `ProxyServer`, `Logger`, and `@DataDirectory Path`; Winter 3 no longer inherits a Velocity parent injector.
+
+Winter processor options belong in each module's `src/main/resources/winter.properties`. Exclude the file from packaged resources with `tasks.processResources { exclude("winter.properties") }`.
+
 ## Migration from 2.0.0
 
 The 3.x line changes artifact coordinates and extension contracts:
 
-1. Replace `com.thewinterframework:command:2.0.0` with `command-paper:3.1.0` or `command-velocity:3.1.0` in both your dependencies and `annotationProcessor` configuration.
+1. Replace `com.thewinterframework:command:2.0.0` with `command-paper:4.0.0` or `command-velocity:4.0.0` in both your dependencies and `annotationProcessor` configuration.
 2. Keep the `com.thewinterframework.command.CommandComponent` import.
 3. Add the command sender type to `CommandManagerConfiguration<C>`, `CommandConfigurationRegistrar<C>`, and `AnnotationParserDecorator<C>`.
 4. Change the parameter of `CommandManagerConfiguration.configure` from `PaperCommandManager<Source>` to `CommandManager<Source>` on Paper, or to `CommandManager<CommandSource>` on Velocity. Inject the concrete command manager when you need platform-specific features.

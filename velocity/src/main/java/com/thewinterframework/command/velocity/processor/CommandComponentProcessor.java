@@ -1,23 +1,14 @@
 package com.thewinterframework.command.velocity.processor;
 
 import com.google.auto.service.AutoService;
-import com.thewinterframework.command.CommandComponent;
-import com.thewinterframework.processor.clazz.ClassWireProcessor;
-import com.thewinterframework.processor.context.ProcessorContext;
-import com.thewinterframework.processor.handler.WinterAnnotationProcessor;
+import com.thewinterframework.command.processor.CommandWireProcessor;
+import com.thewinterframework.processor.extension.WinterProcessorExtension;
 
-import java.lang.annotation.Annotation;
-
-/** Generates the Velocity command module and component list. */
-@AutoService(WinterAnnotationProcessor.class)
-public final class CommandComponentProcessor extends ClassWireProcessor {
+/** Generates the velocity command module and component list. */
+@AutoService(WinterProcessorExtension.class)
+public final class CommandComponentProcessor extends CommandWireProcessor {
     @Override
-    public void onRoundStart(final ProcessorContext context) {
-        context.wireModule("com.thewinterframework.command.velocity.VelocityCommandModule");
-    }
-
-    @Override
-    protected Class<? extends Annotation> wiredAnnotation() {
-        return CommandComponent.class;
+    protected String platformModule() {
+        return "com.thewinterframework.command.velocity.VelocityCommandModule";
     }
 }

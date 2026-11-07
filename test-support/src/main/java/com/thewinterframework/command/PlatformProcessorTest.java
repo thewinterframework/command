@@ -1,6 +1,6 @@
 package com.thewinterframework.command;
 
-import com.thewinterframework.processor.handler.WinterAnnotationProcessor;
+import com.thewinterframework.processor.extension.WinterProcessorExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -22,7 +22,7 @@ class PlatformProcessorTest {
     @Test
     void discoversOnlyTheSelectedCommandProcessor() throws Exception {
         final var platform = System.getProperty("command.test.platform");
-        final var handlers = ServiceLoader.load(WinterAnnotationProcessor.class).stream()
+        final var handlers = ServiceLoader.load(WinterProcessorExtension.class).stream()
                 .map(ServiceLoader.Provider::type)
                 .filter(type -> type.getName().startsWith("com.thewinterframework.command."))
                 .toList();
@@ -51,7 +51,7 @@ class PlatformProcessorTest {
                     @com.velocitypowered.api.plugin.Plugin(id = "command-test", name = "Command Test", version = "1.0")
                     public final class TestPlugin extends com.thewinterframework.velocity.VelocityWinterPlugin {
                         @com.google.inject.Inject
-                        public TestPlugin(com.google.inject.Injector injector) { super(injector); }
+                        public TestPlugin(com.velocitypowered.api.proxy.ProxyServer server, org.slf4j.Logger logger, @com.velocitypowered.api.plugin.annotation.DataDirectory java.nio.file.Path directory) { super(server, logger, directory); }
                     }
                     """;
         Files.writeString(plugin, """
